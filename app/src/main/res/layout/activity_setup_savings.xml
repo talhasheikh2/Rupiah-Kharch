@@ -127,26 +127,16 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvDeductionValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:text="Rs. 500"
-                    android:textColor="@color/text_dark"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
 
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/deductionSlider"
+                <EditText
+                    android:id="@+id/etDeductionAmount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:valueFrom="100"
-                    android:valueTo="1000"
-                    app:thumbColor="@color/teal_primary"
-                    app:trackColorActive="@color/teal_primary"
-                    app:trackColorInactive="@color/text_light" />
-
+                    android:layout_marginTop="14dp"
+                    android:hint="Enter deduction amount"
+                    android:inputType="numberDecimal"
+                    android:textSize="18sp"
+                    android:padding="12dp"/>
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">

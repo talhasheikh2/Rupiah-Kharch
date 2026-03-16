@@ -32,7 +32,7 @@
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:backgroundTint="#6200EE"
-            android:text="★ PRO"
+            android:text="Remove"
             android:textColor="@color/white"
             android:textSize="10sp" />
     </RelativeLayout>

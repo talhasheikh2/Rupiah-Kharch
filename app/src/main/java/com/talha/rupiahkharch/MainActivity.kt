@@ -1,20 +1,28 @@
 package com.talha.rupiahkharch
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.work.*
+import com.google.android.material.button.MaterialButton
 import com.talha.rupiahkharch.model.Expense
 import com.talha.rupiahkharch.viewmodel.ExpenseViewModel
-import com.google.android.material.button.MaterialButton
-import android.content.Intent
-import android.content.res.ColorStateList
+import com.talha.rupiahkharch.worker.SavingsWorker
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
@@ -22,9 +30,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: ExpenseAdapter
     private var isIncomeView = true
 
+    // Permission launcher for Android 13+ notifications
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (!isGranted) {
+            Toast.makeText(this, "Notifications disabled. You won't see savings alerts.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // 1. SCHEDULING & PERMISSIONS
+        askNotificationPermission()
+        setupAutoSavingsWorker()
 
         // Initialize UI Elements
         val cardBackground = findViewById<RelativeLayout>(R.id.cardBackground)
@@ -34,26 +55,21 @@ class MainActivity : AppCompatActivity() {
         val btnViewExpense = findViewById<Button>(R.id.btnViewExpense)
         val btnAdd = findViewById<Button>(R.id.btnAdd)
         val recyclerView = findViewById<RecyclerView>(R.id.rvExpenses)
-        // Find the button by its ID
         val btnReports = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnReports)
-
-
-        // Inside onCreate
         val btnSavings = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSavings)
+
         btnSavings.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#009688"))
 
-
-        // 1. Initialize Adapter FIRST with an empty list
+        // Initialize Adapter
         adapter = ExpenseAdapter(emptyList())
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        // 2. Set the Click Listener for the instruction popup
         adapter.setOnItemClickListener {
             Toast.makeText(this, "Swipe left to delete this record ⬅️", Toast.LENGTH_SHORT).show()
         }
 
-        // 3. Setup Swipe-to-Delete
+        // Setup Swipe-to-Delete
         val itemTouchHelperCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             override fun onMove(rv: RecyclerView, vh: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
 
@@ -75,8 +91,7 @@ class MainActivity : AppCompatActivity() {
                 val itemView = viewHolder.itemView
                 val paint = android.graphics.Paint()
 
-                if (dX < 0) { // Swiping to the left
-                    // 1. Lighter Red Color (Coral/Salmon)
+                if (dX < 0) {
                     paint.color = Color.parseColor("#80FF6B6B")
                     val background = android.graphics.RectF(
                         itemView.right.toFloat() + dX,
@@ -86,12 +101,8 @@ class MainActivity : AppCompatActivity() {
                     )
                     c.drawRect(background, paint)
 
-                    // 2. Draw the Icon Safely
-                    // Make sure you have an icon in drawable named ic_delete
-                    val icon = androidx.core.content.ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_delete)
-
+                    val icon = ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_delete)
                     icon?.let {
-                        // Calculate position
                         val iconMargin = (itemView.height - it.intrinsicHeight) / 2
                         val iconTop = itemView.top + iconMargin
                         val iconBottom = iconTop + it.intrinsicHeight
@@ -99,17 +110,16 @@ class MainActivity : AppCompatActivity() {
                         val iconRight = itemView.right - iconMargin
 
                         it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
-                        it.setTint(Color.WHITE) // Forces the icon to be White
+                        it.setTint(Color.WHITE)
                         it.draw(c)
                     }
                 }
-
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
             }
         }
         ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(recyclerView)
 
-        // 4. Observe Database
+        // Observe Database
         viewModel.allExpenses.observe(this) { allRecords ->
             updateDashboardAndList(allRecords, tvCardTitle, tvTotalAmount, cardBackground)
         }
@@ -123,43 +133,65 @@ class MainActivity : AppCompatActivity() {
         btnViewExpense.setOnClickListener {
             isIncomeView = false
             viewModel.allExpenses.value?.let { updateDashboardAndList(it, tvCardTitle, tvTotalAmount, cardBackground) }
-        }
-        val btnAccountDetails = findViewById<MaterialButton>(R.id.btnAccountDetails)
 
+
+        }
+
+        val btnAccountDetails = findViewById<MaterialButton>(R.id.btnAccountDetails)
         btnAccountDetails.setOnClickListener {
             val allRecords = viewModel.allExpenses.value ?: emptyList()
-
-            // 2. Filter and Sum the income
             val totalIncome = allRecords.filter {
                 it.category.lowercase() == "income" || it.category.lowercase() == "salary"
             }.sumOf { it.amount }
 
-            // 3. Create Intent and pass the value
             val intent = Intent(this, AccountDetailActivity::class.java)
-            intent.putExtra("TOTAL_INCOME", totalIncome) // "TOTAL_INCOME" is the key
+            intent.putExtra("TOTAL_INCOME", totalIncome)
             startActivity(intent)
         }
+
         btnAdd.setOnClickListener { showAddDialog() }
-        // Set the click listener
+
         btnReports.setOnClickListener {
-            // Create an Intent to go from MainActivity to RecordsActivity
-            val intent = Intent(this, RecordsActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, RecordsActivity::class.java))
         }
 
         btnSavings.setOnClickListener {
-            // Create an Intent to go from the current activity to SavingsActivity
-            val intent = Intent(this, SetupSavingsActivity::class.java)
-            startActivity(intent)
-
-            // Optional: Add a smooth slide transition
+            startActivity(Intent(this, SetupSavingsActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
+    }
 
+    /**
+     * Scheduling the background worker to handle Rs. 500 deductions
+     */
+    private fun setupAutoSavingsWorker() {
+        val workManager = WorkManager.getInstance(this)
+
+        // Keep ONLY the background loop (15-minute minimum)
+        val periodicRequest = PeriodicWorkRequestBuilder<SavingsWorker>(15, TimeUnit.MINUTES)
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            "SavingsAutomation",
+            ExistingPeriodicWorkPolicy.KEEP, // KEEP ensures we don't reset the timer every time the app opens
+            periodicRequest
+        )
+
+    }
+    /**
+     * Request notification permission for Android 13+
+     */
+    private fun askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
     }
 
     private fun updateDashboardAndList(allRecords: List<Expense>, title: TextView, amount: TextView, bg: RelativeLayout) {
-        // We check for "income" OR "salary" to be safe
         val filteredList = if (isIncomeView) {
             allRecords.filter { it.category.lowercase() == "income" || it.category.lowercase() == "salary" }
         } else {
@@ -183,7 +215,6 @@ class MainActivity : AppCompatActivity() {
         val etAmount = dialogView.findViewById<EditText>(R.id.etAmount)
         val btnSave = dialogView.findViewById<Button>(R.id.btnSave)
 
-        // CRITICAL: Initialize the Spinner with data
         val categories = arrayOf("Food", "Rent", "Shopping", "Transport", "Health","Bill","Fuel", "Other")
         val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, categories)
         spCategory.adapter = spinnerAdapter
@@ -217,29 +248,22 @@ class MainActivity : AppCompatActivity() {
         }
         dialog.show()
     }
+
     override fun onResume() {
         super.onResume()
-        // Refresh the color every time the user returns to this screen
         loadToolbarTheme()
     }
 
     private fun loadToolbarTheme() {
         val sharedPref = getSharedPreferences("AccountPrefs", MODE_PRIVATE)
-        // Pull only the color. Default is your current blue: #00B0FF
         val colorHex = sharedPref.getString("ACCOUNT_COLOR", "#00B0FF")
 
         try {
             val colorInt = Color.parseColor(colorHex)
-
-            // Update the RelativeLayout background
             val customToolbar = findViewById<RelativeLayout>(R.id.customToolbar)
             customToolbar?.setBackgroundColor(colorInt)
-
-            // Update the System Status Bar to match for a clean look
             window.statusBarColor = colorInt
-
         } catch (e: Exception) {
-            // Fallback to default if something goes wrong
             val defaultColor = Color.parseColor("#00B0FF")
             findViewById<RelativeLayout>(R.id.customToolbar)?.setBackgroundColor(defaultColor)
         }

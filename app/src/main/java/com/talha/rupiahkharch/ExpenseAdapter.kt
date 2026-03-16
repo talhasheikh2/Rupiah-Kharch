@@ -24,9 +24,7 @@ class ExpenseAdapter(private var expenseList: List<Expense>) :
         val ivCategoryIcon: ImageView = itemView.findViewById(R.id.ivCategoryIcon)
     }
 
-    fun getExpenseAt(position: Int): Expense {
-        return expenseList[position]
-    }
+    fun getExpenseAt(position: Int): Expense = expenseList[position]
 
     fun setOnItemClickListener(listener: () -> Unit) {
         onItemClickListener = listener
@@ -40,26 +38,21 @@ class ExpenseAdapter(private var expenseList: List<Expense>) :
 
     override fun onBindViewHolder(holder: ExpenseViewHolder, position: Int) {
         val currentExpense = expenseList[position]
-
-        // 1. Define 'category' to fix "Unresolved reference"
         val category = currentExpense.category.lowercase().trim()
 
         holder.tvTitle.text = currentExpense.title
+        holder.itemView.setOnClickListener { onItemClickListener?.invoke() }
 
-        holder.itemView.setOnClickListener {
-            onItemClickListener?.invoke()
-        }
-
-        // 2. Visual styling for Income vs Expense
+        // 1. Amount Styling
         if (category == "salary" || category == "income") {
             holder.tvAmount.text = "+${currentExpense.amount}"
-            holder.tvAmount.setTextColor(Color.parseColor("#2ECC71")) // Modern Green
+            holder.tvAmount.setTextColor(Color.parseColor("#2ECC71"))
         } else {
             holder.tvAmount.text = "-${currentExpense.amount}"
-            holder.tvAmount.setTextColor(Color.parseColor("#E74C3C")) // Modern Red
+            holder.tvAmount.setTextColor(Color.parseColor("#E74C3C"))
         }
 
-        // 3. Map the Icon Resource
+        // 2. Map the Icon Resource (Added SAVINGS)
         val iconRes = when (category) {
             "shopping"  -> R.drawable.shopping
             "transport" -> R.drawable.car
@@ -67,37 +60,24 @@ class ExpenseAdapter(private var expenseList: List<Expense>) :
             "fuel"      -> R.drawable.fuel
             "health"    -> R.drawable.health
             "salary", "income" -> R.drawable.salary_24
-            "rent"     ->R.drawable.home_24
+            "rent"      -> R.drawable.home_24
             "food"      -> R.drawable.fastfood
-            "grocery"          -> R.drawable.shopping_cart
-            else               -> android.R.drawable.ic_menu_help
+            "grocery"   -> R.drawable.shopping_cart
+            "savings"   -> R.drawable.ic_savings
+            else        -> android.R.drawable.ic_menu_help
         }
-
-        // FIX: Use 'ivCategoryIcon' instead of 'imageView'
         holder.ivCategoryIcon.setImageResource(iconRes)
 
+        // 3. Color Filters (Added SAVINGS color)
         when (category) {
-            "shopping" -> {
-                holder.ivCategoryIcon.setColorFilter(Color.parseColor("#FFB238"), PorterDuff.Mode.SRC_IN)
-            }
-            "transport" -> {
-                holder.ivCategoryIcon.setColorFilter(Color.parseColor("#00B0FF"), PorterDuff.Mode.SRC_IN)
-            }
-            "bill", "fuel" -> {
-                holder.ivCategoryIcon.setColorFilter(Color.parseColor("#D81B60"), PorterDuff.Mode.SRC_IN)
-            }
-            "health" -> {
-                holder.ivCategoryIcon.setColorFilter(Color.parseColor("#009688"), PorterDuff.Mode.SRC_IN)
-            }
-            else -> {
-                // IMPORTANT: This removes the code-based filter so your
-                // manually colored Vector Assets show their original colors.
-                holder.ivCategoryIcon.clearColorFilter()
-            }
+            "shopping" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#FFB238"), PorterDuff.Mode.SRC_IN)
+            "transport" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#00B0FF"), PorterDuff.Mode.SRC_IN)
+            "bill", "fuel" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#D81B60"), PorterDuff.Mode.SRC_IN)
+            "health" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#009688"), PorterDuff.Mode.SRC_IN)
+            "savings" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#4CAF50"), PorterDuff.Mode.SRC_IN) // Green for savings
+            else -> holder.ivCategoryIcon.clearColorFilter()
         }
 
-
-        // Date Formatting
         val formatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
         holder.tvDate.text = formatter.format(Date(currentExpense.date))
     }

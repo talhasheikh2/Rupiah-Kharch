@@ -1,10 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape
             android:innerRadiusRatio="2.5"
             android:shape="ring"
-            android:thickness="4dp"
+            android:thickness="7dp"
             android:useLevel="false">
             <solid android:color="#F0F0F0" />
         </shape>
@@ -12,15 +11,15 @@
 
     <item android:id="@android:id/progress">
         <rotate
-            android:fromDegrees="135"
-            android:toDegrees="135">
+            android:fromDegrees="180"
+            android:toDegrees="180">
             <shape
                 android:innerRadiusRatio="2.5"
                 android:shape="ring"
-                android:thickness="5dp"
+                android:thickness="7dp"
                 android:useLevel="true">
-                <corners android:radius="10dp" />
-                <solid android:color="#5C6BC0" /> </shape>
+                <solid android:color="#5C6BC0" />
+            </shape>
         </rotate>
     </item>
 </layer-list>

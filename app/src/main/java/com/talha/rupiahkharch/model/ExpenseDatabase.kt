@@ -5,13 +5,14 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-// Added SavingsGoal::class and incremented version to 3
-@Database(entities = [Expense::class, SavingsGoal::class], version = 3)
+@Database(
+    entities = [Expense::class, SavingsGoal::class],
+    version = 7,
+    exportSchema = false
+)
 abstract class ExpenseDatabase : RoomDatabase() {
 
     abstract fun expenseDao(): ExpenseDao
-
-    // Added GoalDao to provide access to savings goals
     abstract fun goalDao(): GoalDao
 
     companion object {
@@ -19,14 +20,17 @@ abstract class ExpenseDatabase : RoomDatabase() {
         private var INSTANCE: ExpenseDatabase? = null
 
         fun getDatabase(context: Context): ExpenseDatabase {
+            // Standard Double-Check Locking for Singleton pattern
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     ExpenseDatabase::class.java,
                     "rupiah_kharch_db"
                 )
-                    // If you are still in development, fallbackToDestructiveMigration
-                    // will clear the old DB and create version 3 from scratch.
+                    /* * Since we are on Version 7 with new fields, this will
+                     * wipe the old DB and recreate it with the new schema
+                     * to prevent crashes.
+                     */
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
