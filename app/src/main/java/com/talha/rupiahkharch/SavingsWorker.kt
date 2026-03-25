@@ -1,7 +1,7 @@
 package com.talha.rupiahkharch.worker
 
 import android.content.Context
-import android.util.Log // Added for Logcat
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.ListenableWorker.Result
@@ -19,36 +19,70 @@ class SavingsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             val expenseDao = db.expenseDao()
 
             val allGoals = goalDao.getAllGoalsSync()
-
-            // LOG: Check if worker started
             Log.d("SAVINGS_WORKER", "Worker started. Checking ${allGoals.size} goals.")
 
+            // 1. CALCULATE CURRENT BALANCE ONCE
+            val income = expenseDao.getTotalIncomeSync() ?: 0.0
+            val expenses = expenseDao.getTotalExpenseSync() ?: 0.0
+            val currentBalance = income - expenses
+
+            Log.d("SAVINGS_WORKER", "Current Balance: Rs. $currentBalance")
+
             allGoals.forEach { goal ->
+                // 2. CHECK: IS MANUALLY PAUSED?
+                if (goal.isPaused) {
+                    Log.d("SAVINGS_WORKER", "Skipping '${goal.title}': Goal is paused by user.")
+                    return@forEach
+                }
+
+                // 3. CHECK: SAFETY NET (Does user have enough money?)
+                if (currentBalance < goal.minBalanceSafety) {
+                    Log.d("SAVINGS_WORKER", "Safety Net Triggered for '${goal.title}'! Balance ($currentBalance) < Limit (${goal.minBalanceSafety})")
+
+                    // Update flag to show alert on UI
+                    if (!goal.wasSkippedLowBalance) {
+                        goal.wasSkippedLowBalance = true
+                        goalDao.updateGoal(goal)
+                    }
+
+                    NotificationHelper.showNotification(
+                        applicationContext,
+                        "Savings Paused",
+                        "We skipped your '${goal.title}' saving today to keep your balance above Rs. ${goal.minBalanceSafety}."
+                    )
+                    return@forEach
+                } else {
+                    // Reset the flag if balance is now healthy
+                    if (goal.wasSkippedLowBalance) {
+                        goal.wasSkippedLowBalance = false
+                        goalDao.updateGoal(goal)
+                    }
+                }
+
+                // 4. CHECK: IS IT TIME TO DEDUCT?
                 if (goal.isDeductionDue()) {
                     val currentTime = System.currentTimeMillis()
 
-                    // 1. Update the Savings Goal progress
+                    // Update Goal Progress
                     goal.savedAmount += goal.deductionAmount
                     goal.lastDeductionDate = currentTime
+                    // Ensure flag is false since deduction was successful
+                    goal.wasSkippedLowBalance = false
                     goalDao.updateGoal(goal)
 
-                    // 2. Add to Main Screen Records
-                    // FIXED: Category changed to "savings" (lowercase) to match your adapter filter
+                    // Add Record to Main Screen
                     val savingsExpense = Expense(
                         id = 0,
-                        title = "Auto-Save: ${goal.title}",
+                        title = "Savings Plan: ${goal.title}",
                         amount = goal.deductionAmount,
                         date = currentTime,
                         category = "savings",
                         color = "#009688"
                     )
-
                     expenseDao.insert(savingsExpense)
 
-                    // LOG: Confirm insertion
                     Log.d("SAVINGS_WORKER", "SUCCESS: Added Rs. ${goal.deductionAmount} for ${goal.title}")
 
-                    // 3. Trigger Notification
                     NotificationHelper.showNotification(
                         applicationContext,
                         "Savings Alert!",

@@ -21,4 +21,10 @@ interface ExpenseDao {
 
     @Query("SELECT * FROM expense_table WHERE id = :id")
     fun getExpenseById(id: Int): LiveData<Expense>
+
+    @Query("SELECT SUM(amount) FROM expense_table WHERE category IN ('income', 'salary', 'Income', 'Salary')")
+    fun getTotalIncomeSync(): Double
+
+    @Query("SELECT SUM(amount) FROM expense_table WHERE category NOT IN ('income', 'salary', 'Income', 'Salary')")
+    fun getTotalExpenseSync(): Double
 }

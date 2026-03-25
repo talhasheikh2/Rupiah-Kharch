@@ -27,6 +27,7 @@ class SetupSavingsActivity : AppCompatActivity() {
     private lateinit var rvCategories: RecyclerView
     private lateinit var etTargetAmount: EditText
     private lateinit var etDeductionAmount: EditText
+    private lateinit var etMinBalanceSafety: EditText // NEW
     private lateinit var toggleGroup: MaterialButtonToggleGroup
     private lateinit var tvPrediction: TextView
     private lateinit var btnStartGoal: MaterialButton
@@ -52,6 +53,7 @@ class SetupSavingsActivity : AppCompatActivity() {
         rvCategories = findViewById(R.id.rvCategories)
         etTargetAmount = findViewById(R.id.etTargetAmount)
         etDeductionAmount = findViewById(R.id.etDeductionAmount)
+        etMinBalanceSafety = findViewById(R.id.etMinBalanceSafety) // NEW
         toggleGroup = findViewById(R.id.toggleGroup)
         tvPrediction = findViewById(R.id.tvPrediction)
         btnStartGoal = findViewById(R.id.btnStartGoal)
@@ -125,9 +127,15 @@ class SetupSavingsActivity : AppCompatActivity() {
     private fun saveGoalToDatabase() {
         val targetAmountValue = etTargetAmount.text.toString().toDoubleOrNull() ?: 0.0
         val deductionAmountValue = etDeductionAmount.text.toString().toDoubleOrNull() ?: 0.0
+        val minSafetyValue = etMinBalanceSafety.text.toString().toDoubleOrNull() ?: 10000.0 // NEW: Default to 10k
 
         if (targetAmountValue <= 0) {
             etTargetAmount.error = "Please enter a valid target"
+            return
+        }
+
+        if (deductionAmountValue <= 0) {
+            etDeductionAmount.error = "Please enter a deduction amount"
             return
         }
 
@@ -140,40 +148,56 @@ class SetupSavingsActivity : AppCompatActivity() {
 
         val currentTime = System.currentTimeMillis()
 
-        // 1. Prepare the Goal
-        val newGoal = SavingsGoal(
-            id = 0,
-            title = selectedCategoryName,
-            targetAmount = targetAmountValue,
-            iconRes = selectedIconRes,
-            colorHex = "#009688",
-            deductionAmount = deductionAmountValue,
-            frequency = frequency,
-            startDate = currentTime,
-            savedAmount = deductionAmountValue, // Record the first deduction
-            lastDeductionDate = currentTime    // Set this to now so worker waits for the NEXT interval
-        )
-
-        // 2. Prepare the Expense record for the Main Screen
-        val firstDeductionRecord = com.talha.rupiahkharch.model.Expense(
-            id = 0,
-            title = "Savings For : $selectedCategoryName",
-            amount = deductionAmountValue,
-            date = currentTime,
-            category = "savings", // Lowercase to match your adapter!
-            color = "#009688"
-        )
-
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val db = ExpenseDatabase.getDatabase(applicationContext)
 
-                // SAVE BOTH to the database
+                // NEW: Calculate current balance to see if we should perform the first deduction
+                val income = db.expenseDao().getTotalIncomeSync() ?: 0.0
+                val expense = db.expenseDao().getTotalExpenseSync() ?: 0.0
+                val currentBalance = income - expense
+
+                // Determine if we start with money already saved or 0 based on safety limit
+                val initialSavedAmount = if (currentBalance >= minSafetyValue) deductionAmountValue else 0.0
+
+                // 1. Prepare the Goal
+                val newGoal = SavingsGoal(
+                    id = 0,
+                    title = selectedCategoryName,
+                    targetAmount = targetAmountValue,
+                    iconRes = selectedIconRes,
+                    colorHex = "#009688",
+                    deductionAmount = deductionAmountValue,
+                    frequency = frequency,
+                    startDate = currentTime,
+                    savedAmount = initialSavedAmount,
+                    lastDeductionDate = if (initialSavedAmount > 0) currentTime else 0L,
+                    minBalanceSafety = minSafetyValue, // NEW
+                    isPaused = false // NEW
+                )
+
+                // Save Goal
                 db.goalDao().insertGoal(newGoal)
-                db.expenseDao().insert(firstDeductionRecord) // THIS WAS MISSING!
+
+                // 2. If we actually deducted money, add the record
+                if (initialSavedAmount > 0) {
+                    val firstDeductionRecord = com.talha.rupiahkharch.model.Expense(
+                        id = 0,
+                        title = "Savings: $selectedCategoryName",
+                        amount = deductionAmountValue,
+                        date = currentTime,
+                        category = "savings",
+                        color = "#009688"
+                    )
+                    db.expenseDao().insert(firstDeductionRecord)
+                }
 
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(applicationContext, "Goal Started & First Deduction Added!", Toast.LENGTH_SHORT).show()
+                    if (initialSavedAmount > 0) {
+                        Toast.makeText(applicationContext, "Goal Started & First Deduction Added!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(applicationContext, "Goal Started! First deduction skipped (Balance low).", Toast.LENGTH_LONG).show()
+                    }
                     startActivity(Intent(this@SetupSavingsActivity, SavingsActivity::class.java))
                     finish()
                 }

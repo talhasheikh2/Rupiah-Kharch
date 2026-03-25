@@ -17,13 +17,12 @@ data class SavingsGoal(
     val frequency: String, // Matches your Activity setup
     val startDate: Long = System.currentTimeMillis(),
     var savedAmount: Double = 0.0,
-    var lastDeductionDate: Long = 0L
+    var lastDeductionDate: Long = 0L,
+    val minBalanceSafety: Double = 10000.0,
+    var isPaused: Boolean = false,
+    var wasSkippedLowBalance: Boolean = false
 ) {
 
-    /**
-     * LOGIC: Checks if it's time to deduct money.
-     * Fixed to handle the very first deduction (lastDeductionDate == 0).
-     */
     fun isDeductionDue(): Boolean {
         val currentTime = System.currentTimeMillis()
 
