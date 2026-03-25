@@ -37,22 +37,33 @@ class SavingsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
                 // 3. CHECK: SAFETY NET (Does user have enough money?)
                 if (currentBalance < goal.minBalanceSafety) {
-                    Log.d("SAVINGS_WORKER", "Safety Net Triggered for '${goal.title}'! Balance ($currentBalance) < Limit (${goal.minBalanceSafety})")
+                    Log.d("SAVINGS_WORKER", "Safety Net Triggered for '${goal.title}'!")
 
-                    // Update flag to show alert on UI
+                    // Update UI flag (This stays true so the card shows the red alert)
                     if (!goal.wasSkippedLowBalance) {
                         goal.wasSkippedLowBalance = true
                         goalDao.updateGoal(goal)
                     }
 
-                    NotificationHelper.showNotification(
-                        applicationContext,
-                        "Savings Paused",
-                        "We skipped your '${goal.title}' saving today to keep your balance above Rs. ${goal.minBalanceSafety}."
-                    )
+                    // --- NEW: NOTIFICATION THROTTLING (Max ~3 times a week) ---
+                    val currentTime = System.currentTimeMillis()
+                    val fortyEightHours = 48 * 60 * 60 * 1000L // 48 hours in milliseconds
+
+                    if (currentTime - goal.lastNotificationDate > fortyEightHours) {
+                        NotificationHelper.showNotification(
+                            applicationContext,
+                            "Savings Paused",
+                            "We skipped your '${goal.title}' saving today to keep your balance above Rs. ${goal.minBalanceSafety}."
+                        )
+
+                        // Update the notification timestamp
+                        goal.lastNotificationDate = currentTime
+                        goalDao.updateGoal(goal)
+                    }
+
                     return@forEach
                 } else {
-                    // Reset the flag if balance is now healthy
+                    // Reset flag if balance is now healthy
                     if (goal.wasSkippedLowBalance) {
                         goal.wasSkippedLowBalance = false
                         goalDao.updateGoal(goal)
@@ -66,8 +77,11 @@ class SavingsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                     // Update Goal Progress
                     goal.savedAmount += goal.deductionAmount
                     goal.lastDeductionDate = currentTime
-                    // Ensure flag is false since deduction was successful
+
+                    // IMPORTANT: Reset notification timer & UI flag on success
                     goal.wasSkippedLowBalance = false
+                    goal.lastNotificationDate = 0L
+
                     goalDao.updateGoal(goal)
 
                     // Add Record to Main Screen

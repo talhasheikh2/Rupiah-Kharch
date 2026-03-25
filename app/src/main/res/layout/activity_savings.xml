@@ -21,18 +21,19 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:text="Trezo"
+        android:text="Savings"
         android:textColor="#212121"
         android:textSize="20sp"
         android:textStyle="bold" />
 
         <Button
+            android:id="@+id/backToAccount"
             android:layout_width="wrap_content"
             android:layout_height="35dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:backgroundTint="#6200EE"
-            android:text="Remove"
+            android:text="Your Account"
             android:textColor="@color/white"
             android:textSize="10sp" />
     </RelativeLayout>

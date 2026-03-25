@@ -20,7 +20,8 @@ data class SavingsGoal(
     var lastDeductionDate: Long = 0L,
     val minBalanceSafety: Double = 10000.0,
     var isPaused: Boolean = false,
-    var wasSkippedLowBalance: Boolean = false
+    var wasSkippedLowBalance: Boolean = false,
+    var lastNotificationDate: Long = 0L // Stores timestamp of the last warning
 ) {
 
     fun isDeductionDue(): Boolean {

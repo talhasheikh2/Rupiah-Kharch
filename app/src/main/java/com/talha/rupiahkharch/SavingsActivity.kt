@@ -1,6 +1,8 @@
 package com.talha.rupiahkharch
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -18,23 +20,31 @@ class SavingsActivity : AppCompatActivity() {
 
     private lateinit var rvSavingsGoals: RecyclerView
     private lateinit var adapter: SavingsGoalAdapter
+    private lateinit var btnBackToAccount: Button // Add this
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_savings)
 
+        // Initialize views
         rvSavingsGoals = findViewById(R.id.rvSavingsGoals)
+        btnBackToAccount = findViewById(R.id.backToAccount) // Initialize the button
+
         rvSavingsGoals.layoutManager = GridLayoutManager(this, 2)
 
-        // 1. UPDATED: Initialize Adapter with TWO listeners (Delete and Pause)
+        // 1. Setup the Navigation to EditAccountActivity
+        btnBackToAccount.setOnClickListener {
+            val intent = Intent(this, AccountDetailActivity::class.java)
+            startActivity(intent)
+        }
+
+        // 2. Initialize Adapter with TWO listeners (Delete and Pause)
         adapter = SavingsGoalAdapter(
             goals = emptyList(),
             onItemClick = { clickedGoal ->
-                // Tapping the card still shows delete confirmation
                 showDeleteConfirmation(clickedGoal)
             },
             onPauseClick = { clickedGoal ->
-                // Tapping the pause icon toggles the status
                 toggleGoalPause(clickedGoal)
             }
         )
@@ -49,21 +59,17 @@ class SavingsActivity : AppCompatActivity() {
         }
     }
 
-    // 2. NEW: Function to toggle the Pause/Resume status in the DB
+    // Toggle the Pause/Resume status in the DB
     private fun toggleGoalPause(goal: SavingsGoal) {
         lifecycleScope.launch(Dispatchers.IO) {
             val db = ExpenseDatabase.getDatabase(applicationContext)
 
-            // Flip the boolean value
             goal.isPaused = !goal.isPaused
-
-            // Save to database
             db.goalDao().updateGoal(goal)
 
             withContext(Dispatchers.Main) {
                 val statusMessage = if (goal.isPaused) "Goal Paused" else "Goal Resumed"
                 Toast.makeText(this@SavingsActivity, statusMessage, Toast.LENGTH_SHORT).show()
-                // No need to refresh manually, LiveData will handle it!
             }
         }
     }
