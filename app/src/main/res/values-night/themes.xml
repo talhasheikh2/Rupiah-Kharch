@@ -1,7 +1,16 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+﻿<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Base.Theme.RupiahKharch" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Disables the system preview window on older Android versions -->
+        <item name="android:windowDisablePreview">true</item>
+
+        <!-- Matches the background of your custom splash -->
+        <item name="android:windowBackground">@drawable/splash_gradient</item>
+
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="28">shortEdges</item>
+
+        <!-- Sets the system splash icon to transparent for Android 12+ -->
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@android:color/transparent</item>
     </style>
+
+    <style name="Theme.RupiahKharch" parent="Base.Theme.RupiahKharch" />
 </resources>
