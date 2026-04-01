@@ -4,20 +4,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="@color/bg_light">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        >
+        android:elevation="0dp">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="65dp"
-            android:background="#00B0FF"
+            android:background="@color/primary_blue"
             app:navigationIcon="@drawable/arrow_back"
-            app:navigationIconTint="#FFFFFF">
+            app:navigationIconTint="@color/always_white">
 
             <RelativeLayout
                 android:layout_width="match_parent"
@@ -28,7 +28,7 @@
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
                     android:text="Account Detail"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/always_white"
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
@@ -40,7 +40,7 @@
                     android:layout_centerVertical="true"
                     android:layout_marginEnd="16dp"
                     android:src="@drawable/edit"
-                    app:tint="#FFFFFF" />
+                    app:tint="@color/always_white" />
             </RelativeLayout>
         </androidx.appcompat.widget.Toolbar>
     </com.google.android.material.appbar.AppBarLayout>
@@ -74,7 +74,7 @@
                         android:layout_height="match_parent"
                         android:padding="12dp"
                         android:src="@drawable/wallet"
-                        app:tint="#FFFFFF" />
+                        app:tint="@color/always_white" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <LinearLayout
@@ -82,19 +82,21 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
                     android:orientation="vertical">
+
                     <TextView
                         android:id="@+id/tvAccountDetailName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Cash"
-                        android:textColor="#212121"
+                        android:textColor="@color/text_dark"
                         android:textSize="18sp"
                         android:textStyle="bold" />
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Cash"
-                        android:textColor="#757575" />
+                        android:textColor="@color/text_light" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -108,7 +110,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="TODAY"
-                    android:textColor="#757575"
+                    android:textColor="@color/text_light"
                     android:textSize="12sp" />
 
                 <LinearLayout
@@ -123,15 +125,16 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="PKR 0.00"
-                        android:textColor="#212121"
+                        android:textColor="@color/text_dark"
                         android:textSize="28sp"
                         android:textStyle="bold" />
+
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_marginStart="8dp"
                         android:src="@drawable/edit"
-                        app:tint="#90A4AE" />
+                        app:tint="@color/text_light" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -140,13 +143,15 @@
                     android:layout_alignParentEnd="true"
                     android:gravity="end"
                     android:orientation="vertical">
+
                     <TextView
                         android:id="@+id/tvDateRange"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Calculating..."
-                        android:textColor="#757575"
+                        android:textColor="@color/text_light"
                         android:textSize="12sp" />
+
                     <TextView
                         android:id="@+id/tvPercentage"
                         android:layout_width="wrap_content"
@@ -161,22 +166,21 @@
                 android:layout_width="match_parent"
                 android:layout_height="250dp"
                 android:layout_marginTop="16dp"
-                app:cardElevation="0dp">
+                app:cardBackgroundColor="@color/chart_bg"
+                app:cardElevation="4dp">
 
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/lineChart"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="#FFFFFF" />
+                    android:background="@android:color/transparent" />
 
-            </com.google.android.material.card.MaterialCardView>
-
-            <TextView
+            </com.google.android.material.card.MaterialCardView>            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
                 android:text="Last records overview"
-                android:textColor="#212121"
+                android:textColor="@color/text_dark"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -184,7 +188,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="What was the last transactions I made?"
-                android:textColor="#757575"
+                android:textColor="@color/text_light"
                 android:textSize="14sp" />
 
             <androidx.recyclerview.widget.RecyclerView

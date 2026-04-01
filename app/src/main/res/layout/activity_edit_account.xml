@@ -1,34 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
+    android:background="@color/bg_light"
     android:orientation="vertical">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/editToolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#27AE60"
+        android:background="@color/primary_blue"
         app:contentInsetStart="0dp"
-        app:contentInsetLeft="0dp"
-        android:elevation="4dp"
-        xmlns:app="http://schemas.android.com/apk/res-auto">
+        android:elevation="4dp">
+
         <RelativeLayout
             android:id="@+id/toolBar1"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@android:color/transparent">
+
             <ImageView
                 android:id="@+id/btnCancel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
+                android:layout_marginLeft="16dp"
                 android:src="@drawable/ic_close"
-                app:tint="@color/white"
-                android:layout_marginLeft="16dp"/>
+                app:tint="@color/always_white" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -37,7 +36,7 @@
                 android:layout_marginStart="15dp"
                 android:layout_toEndOf="@id/btnCancel"
                 android:text="Edit account"
-                android:textColor="@color/white"
+                android:textColor="@color/always_white"
                 android:textSize="20sp" />
 
             <ImageView
@@ -48,7 +47,7 @@
                 android:layout_centerVertical="true"
                 android:layout_marginEnd="16dp"
                 android:src="@drawable/ic_check"
-                app:tint="@color/white" />
+                app:tint="@color/always_white" />
 
             <ImageView
                 android:id="@+id/btnDelete"
@@ -58,7 +57,7 @@
                 android:layout_marginEnd="15dp"
                 android:layout_toStartOf="@id/btnSave"
                 android:src="@drawable/ic_delete"
-                app:tint="@color/white" />
+                app:tint="@color/always_white" />
 
         </RelativeLayout>
     </androidx.appcompat.widget.Toolbar>
@@ -78,7 +77,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Account name"
-                android:textColor="#2980B9"
+                android:textColor="@color/primary_teal"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -86,25 +85,26 @@
                 android:id="@+id/etAccountName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:backgroundTint="#2980B9"
+                android:backgroundTint="@color/primary_teal"
                 android:hint="Enter name"
+                android:textColorHint="@color/text_light"
                 android:inputType="textPersonName"
                 android:paddingBottom="12dp"
-                android:textColor="#212121"
+                android:textColor="@color/text_dark"
                 android:textSize="18sp" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:layout_marginTop="8dp"
-                android:background="#EEEEEE" />
+                android:background="@color/gray_background" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:text="Amount"
-                android:textColor="#9E9E9E"
+                android:textColor="@color/text_light"
                 android:textSize="14sp" />
 
             <EditText
@@ -113,23 +113,24 @@
                 android:layout_height="wrap_content"
                 android:background="@null"
                 android:hint="1000"
+                android:textColorHint="@color/text_light"
                 android:inputType="numberDecimal"
                 android:paddingTop="8dp"
                 android:paddingBottom="12dp"
-                android:textColor="#212121"
+                android:textColor="@color/text_dark"
                 android:textSize="18sp" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#EEEEEE" />
+                android:background="@color/gray_background" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:text="Color"
-                android:textColor="#9E9E9E"
+                android:textColor="@color/text_light"
                 android:textSize="14sp" />
 
             <Spinner
@@ -137,16 +138,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:layout_marginTop="8dp"
-                android:background="@drawable/bg_spinner_white"
+                android:backgroundTint="@color/white"
                 android:paddingEnd="40dp"
                 android:spinnerMode="dropdown" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#EEEEEE" />
+                android:background="@color/gray_background" />
 
         </LinearLayout>
     </ScrollView>
-
 </LinearLayout>

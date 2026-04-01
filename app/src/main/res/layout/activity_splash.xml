@@ -45,7 +45,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Kelola Uang, Hidup Tenang"
+        android:text="Khao Piyoo, Hisaab Se"
         android:textColor="#E0F7FA"
         android:textSize="16sp"
         android:visibility="invisible" />

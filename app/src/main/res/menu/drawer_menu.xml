@@ -1,0 +1,28 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_account"
+        android:title="Your Account"
+        android:icon="@drawable/ic_account" />
+
+    <item
+        android:id="@+id/nav_goals"
+        android:title="Goals"
+        android:icon="@drawable/goal" />
+
+    <item
+        android:id="@+id/nav_about"
+        android:title="About"
+        android:icon="@drawable/info" />
+
+    <item
+        android:id="@+id/nav_settings"
+        android:title="Settings"
+        android:icon="@drawable/setting" />
+
+    <item
+        android:id="@+id/nav_help"
+        android:title="Help"
+        android:icon="@drawable/help" />
+
+</menu>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary_blue">#00B0FF</color>
+    <color name="primary_teal">#80DEEA</color>
+    <color name="teal_primary">#00C9FF</color>
+    <color name="teal_light">#1D2D3D</color>
+
+    <color name="bg_light">#0B121E</color>
+    <color name="white">#161F2E</color>
+    <color name="always_white">#FFFFFF</color>
+    <color name="gray_background">#252F3F</color>
+    <color name="chart_bg">@color/primary_blue</color>
+    <color name="help_screen_bg">#0B121E</color>
+
+    <color name="text_dark">#E2E8F0</color>
+    <color name="text_light">#94A3B8</color>
+</resources>
