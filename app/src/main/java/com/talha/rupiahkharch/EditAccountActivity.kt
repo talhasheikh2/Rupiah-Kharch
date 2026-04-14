@@ -63,7 +63,7 @@ class EditAccountActivity : AppCompatActivity() {
 
     private fun setupColorSpinner() {
         val colorList = listOf(
-            "#E74C3C", "#FF1744", "#FF5252", "#F06292",
+            "#00B0FF", "#E74C3C", "#FF1744", "#FF5252", "#F06292",
             "#AD1457", "#6A1B9A", "#AB47BC", "#BA68C8", "#00695C"
         )
         val colorAdapter = ColorSpinnerAdapter(this, colorList)

@@ -60,8 +60,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // --- PERSISTENCE LOGIC START ---
-        // Must be called BEFORE super.onCreate to prevent flickering and ensure
-        // the app starts in the correct mode after being cleared from RAM.
         val sharedPrefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
         val isDark = sharedPrefs.getBoolean("dark_mode", false)
         if (isDark) {
@@ -98,7 +96,7 @@ class MainActivity : AppCompatActivity() {
         val shakeAnim = AnimationUtils.loadAnimation(this, R.anim.shake)
         shakeRunnable = Runnable {
             balanceCard.startAnimation(shakeAnim)
-            handler.postDelayed(shakeRunnable, 4000) // Repeat every 4 seconds
+            handler.postDelayed(shakeRunnable, 4000)
         }
 
         val navigationView = findViewById<NavigationView>(R.id.navigationView)
@@ -109,19 +107,40 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
+        // --- UPDATED LISTENERS ---
         adapter.setOnItemClickListener {
-            Toast.makeText(this, "Swipe left to delete this record ⬅️", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Hold record to Edit or Swipe left to Delete ⬅️", Toast.LENGTH_SHORT).show()
         }
 
-        // Setup Swipe-to-Delete
+        // 1. Long Click to Edit Functionality
+        adapter.setOnItemLongClickListener { expense ->
+            showEditDialog(expense)
+        }
+
+        // Setup Swipe-to-Delete with Confirmation Dialog
         val itemTouchHelperCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             override fun onMove(rv: RecyclerView, vh: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
                 val expenseToDelete = adapter.getExpenseAt(position)
-                viewModel.delete(expenseToDelete)
-                Toast.makeText(this@MainActivity, "${expenseToDelete.title} deleted", Toast.LENGTH_SHORT).show()
+
+                val builder = AlertDialog.Builder(this@MainActivity)
+                builder.setTitle("Delete Record")
+                builder.setMessage("Are you sure you want to delete '${expenseToDelete.title}'?")
+
+                builder.setPositiveButton("Delete") { _, _ ->
+                    viewModel.delete(expenseToDelete)
+                    Toast.makeText(this@MainActivity, "${expenseToDelete.title} deleted", Toast.LENGTH_SHORT).show()
+                }
+
+                builder.setNegativeButton("Cancel") { dialog, _ ->
+                    adapter.notifyItemChanged(position)
+                    dialog.dismiss()
+                }
+
+                builder.setCancelable(false)
+                builder.show()
             }
 
             override fun onChildDraw(c: android.graphics.Canvas, rv: RecyclerView, vh: RecyclerView.ViewHolder, dX: Float, dY: Float, actionState: Int, active: Boolean) {
@@ -192,6 +211,62 @@ class MainActivity : AppCompatActivity() {
             true
         }
     }
+
+    // --- NEW EDIT DIALOG FUNCTION ---
+    private fun showEditDialog(expense: Expense) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_add_expense, null)
+        val dialog = AlertDialog.Builder(this).setView(dialogView).create()
+
+        val rgType = dialogView.findViewById<RadioGroup>(R.id.rgType)
+        val spCategory = dialogView.findViewById<Spinner>(R.id.spCategory)
+        val etTitle = dialogView.findViewById<EditText>(R.id.etTitle)
+        val etAmount = dialogView.findViewById<EditText>(R.id.etAmount)
+        val btnSave = dialogView.findViewById<Button>(R.id.btnSave)
+
+        val categories = arrayOf("Food", "Rent", "Shopping", "Transport", "Health","Bill","Fuel", "Other")
+        spCategory.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, categories)
+
+        // 1. Pre-fill data
+        etTitle.setText(expense.title)
+        etAmount.setText(expense.amount.toString())
+        btnSave.text = "Update"
+
+        if (expense.category.lowercase() == "income" || expense.category.lowercase() == "salary") {
+            rgType.check(R.id.rbIncome)
+            spCategory.visibility = View.GONE
+        } else {
+            rgType.check(R.id.rbExpense)
+            spCategory.visibility = View.VISIBLE
+            val spinnerPosition = categories.indexOfFirst { it.lowercase() == expense.category.lowercase() }
+            if (spinnerPosition != -1) spCategory.setSelection(spinnerPosition)
+        }
+
+        rgType.setOnCheckedChangeListener { _, checkedId ->
+            spCategory.visibility = if (checkedId == R.id.rbExpense) View.VISIBLE else View.GONE
+        }
+
+        btnSave.setOnClickListener {
+            val title = etTitle.text.toString()
+            val amountVal = etAmount.text.toString().toDoubleOrNull() ?: 0.0
+            val category = if (rgType.checkedRadioButtonId == R.id.rbIncome) "income" else spCategory.selectedItem.toString().lowercase()
+
+            if (title.isNotEmpty() && amountVal > 0) {
+                // 2. Update existing object
+                expense.title = title
+                expense.amount = amountVal
+                expense.category = category
+                // Date remains same as original creation unless you want to update it to System.currentTimeMillis()
+
+                viewModel.update(expense) // Ensure your ViewModel has an update function
+                dialog.dismiss()
+                Toast.makeText(this, "Record Updated", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Please enter name and amount", Toast.LENGTH_SHORT).show()
+            }
+        }
+        dialog.show()
+    }
+
     private fun setupAutoSavingsWorker() {
         val workManager = WorkManager.getInstance(this)
         val periodicRequest = PeriodicWorkRequestBuilder<SavingsWorker>(15, TimeUnit.MINUTES).build()
@@ -213,7 +288,6 @@ class MainActivity : AppCompatActivity() {
             allRecords.filter { it.category.lowercase() !in listOf("income", "salary") }
         }
 
-        // --- EMPTY STATE LOGIC WITH ANIMATION ---
         if (filteredList.isEmpty()) {
             if (tvEmptyState.visibility == View.GONE) {
                 tvEmptyState.visibility = View.VISIBLE
@@ -261,13 +335,11 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         loadToolbarTheme()
         loadProfileImage()
-        // Start the shake loop when screen is visible
         handler.postDelayed(shakeRunnable, 4000)
     }
 
     override fun onPause() {
         super.onPause()
-        // Stop the shake loop when user leaves screen to save battery
         handler.removeCallbacks(shakeRunnable)
     }
 

@@ -15,7 +15,9 @@ import java.util.*
 class ExpenseAdapter(private var expenseList: List<Expense>) :
     RecyclerView.Adapter<ExpenseAdapter.ExpenseViewHolder>() {
 
-    private var onItemClickListener: (() -> Unit)? = null
+    // Updated listeners to pass the Expense object
+    private var onItemClickListener: ((Expense) -> Unit)? = null
+    private var onItemLongClickListener: ((Expense) -> Unit)? = null
 
     class ExpenseViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvTitle: TextView = itemView.findViewById(R.id.tvExpenseTitle)
@@ -26,8 +28,14 @@ class ExpenseAdapter(private var expenseList: List<Expense>) :
 
     fun getExpenseAt(position: Int): Expense = expenseList[position]
 
-    fun setOnItemClickListener(listener: () -> Unit) {
+    // Setter for Click
+    fun setOnItemClickListener(listener: (Expense) -> Unit) {
         onItemClickListener = listener
+    }
+
+    // Setter for Long Click (Hold to Edit)
+    fun setOnItemLongClickListener(listener: (Expense) -> Unit) {
+        onItemLongClickListener = listener
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ExpenseViewHolder {
@@ -41,7 +49,17 @@ class ExpenseAdapter(private var expenseList: List<Expense>) :
         val category = currentExpense.category.lowercase().trim()
 
         holder.tvTitle.text = currentExpense.title
-        holder.itemView.setOnClickListener { onItemClickListener?.invoke() }
+
+        // Handle regular click
+        holder.itemView.setOnClickListener {
+            onItemClickListener?.invoke(currentExpense)
+        }
+
+        // Handle long click (Hold to edit)
+        holder.itemView.setOnLongClickListener {
+            onItemLongClickListener?.invoke(currentExpense)
+            true // true means we handled the click
+        }
 
         // 1. Amount Styling
         if (category == "salary" || category == "income") {
@@ -52,7 +70,7 @@ class ExpenseAdapter(private var expenseList: List<Expense>) :
             holder.tvAmount.setTextColor(Color.parseColor("#E74C3C"))
         }
 
-        // 2. Map the Icon Resource (Added SAVINGS)
+        // 2. Map the Icon Resource
         val iconRes = when (category) {
             "shopping"  -> R.drawable.shopping
             "transport" -> R.drawable.car
@@ -68,13 +86,13 @@ class ExpenseAdapter(private var expenseList: List<Expense>) :
         }
         holder.ivCategoryIcon.setImageResource(iconRes)
 
-        // 3. Color Filters (Added SAVINGS color)
+        // 3. Color Filters
         when (category) {
             "shopping" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#FFB238"), PorterDuff.Mode.SRC_IN)
             "transport" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#00B0FF"), PorterDuff.Mode.SRC_IN)
             "bill", "fuel" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#D81B60"), PorterDuff.Mode.SRC_IN)
             "health" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#009688"), PorterDuff.Mode.SRC_IN)
-            "savings" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#4CAF50"), PorterDuff.Mode.SRC_IN) // Green for savings
+            "savings" -> holder.ivCategoryIcon.setColorFilter(Color.parseColor("#4CAF50"), PorterDuff.Mode.SRC_IN)
             else -> holder.ivCategoryIcon.clearColorFilter()
         }
 
