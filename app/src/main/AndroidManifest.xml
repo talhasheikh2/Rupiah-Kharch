@@ -68,6 +68,12 @@
             android:exported="false" />
 
 
+        <activity
+            android:name=".DonutChartActivity"
+            android:exported="false" />
+
+
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.talha.rupiahkharch.fileprovider"

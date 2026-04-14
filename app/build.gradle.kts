@@ -6,9 +6,8 @@ plugins {
 
 android {
     namespace = "com.talha.rupiahkharch"
-    compileSdk {
-        version = release(36)
-    }
+    // Keep these at 36 to satisfy the new library requirements
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.talha.rupiahkharch"
@@ -20,11 +19,11 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-
     buildFeatures {
         viewBinding = true
         dataBinding = false
     }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -34,39 +33,50 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    implementation("io.coil-kt:coil:2.4.0")
-    implementation("io.coil-kt:coil-base:2.4.0")
-    val lifecycle_version = "2.7.0"
+    // Standard AndroidX
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
+
+    // Activity & Fragment
+    implementation("androidx.activity:activity-ktx:1.9.3")
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
+
+    // Coil (FIX FOR YOUR CURRENT ERRORS)
+    implementation("io.coil-kt:coil:2.6.0")
+
+    // Lifecycle
+    val lifecycle_version = "2.8.7"
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version")
 
-    // 2. Activity KTX (Makes connecting Activity to ViewModel much easier)
-    implementation("androidx.fragment:fragment-ktx:1.6.2")
-    implementation("androidx.activity:activity-ktx:1.8.2")
+    // Room
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
     kapt("androidx.room:room-compiler:$room_version")
 
+    // Chart
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
+    // Work Manager
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
+
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }

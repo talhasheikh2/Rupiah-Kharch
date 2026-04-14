@@ -1,0 +1,4 @@
+<layoutAnimation xmlns:android="http://schemas.android.com/apk/res/android"
+    android:animation="@anim/item_fall_from_right"
+    android:delay="25%"
+    android:animationOrder="normal" />

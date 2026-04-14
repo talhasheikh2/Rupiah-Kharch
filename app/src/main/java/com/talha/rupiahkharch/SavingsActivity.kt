@@ -3,6 +3,8 @@ package com.talha.rupiahkharch
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -20,7 +22,11 @@ class SavingsActivity : AppCompatActivity() {
 
     private lateinit var rvSavingsGoals: RecyclerView
     private lateinit var adapter: SavingsGoalAdapter
-    private lateinit var btnBackToAccount: Button // Add this
+    private lateinit var btnBackToAccount: ImageButton // Add this
+
+    private lateinit var backHome: ImageView // Add this
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,12 +35,19 @@ class SavingsActivity : AppCompatActivity() {
         // Initialize views
         rvSavingsGoals = findViewById(R.id.rvSavingsGoals)
         btnBackToAccount = findViewById(R.id.backToAccount) // Initialize the button
+        backHome = findViewById(R.id.backHome) // Initialize the button
+
 
         rvSavingsGoals.layoutManager = GridLayoutManager(this, 2)
 
         // 1. Setup the Navigation to EditAccountActivity
         btnBackToAccount.setOnClickListener {
             val intent = Intent(this, AccountDetailActivity::class.java)
+            startActivity(intent)
+        }
+
+        backHome.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
         }
 

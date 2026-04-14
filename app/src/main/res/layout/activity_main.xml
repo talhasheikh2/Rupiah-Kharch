@@ -48,7 +48,7 @@
                 android:src="@drawable/ic_account"
                 android:padding="2dp"
                 android:scaleType="centerCrop"
-                app:strokeColor="@color/always_white"
+                app:strokeColor="@color/bg_light"
                 app:strokeWidth="1dp"
                 app:shapeAppearanceOverlay="@style/CircleImageView" />        </RelativeLayout>
 
@@ -135,7 +135,7 @@
                 android:layout_weight="1"
                 android:text="Savings"
                 android:textColor="@color/always_white"
-                app:backgroundTint="#FFB300"
+                app:backgroundTint="#D3AE53"
                 app:cornerRadius="15dp" />
 
             <com.google.android.material.button.MaterialButton
@@ -144,7 +144,7 @@
                 android:layout_height="60dp"
                 android:layout_margin="4dp"
                 android:layout_weight="1"
-                android:text="Reports"
+                android:text="Records"
                 android:textColor="@color/always_white"
                 app:backgroundTint="#D81B60"
                 app:cornerRadius="15dp" />
@@ -161,6 +161,18 @@
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/buttonLayout" />
+        <TextView
+            android:id="@+id/tvEmptyState"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No records added yet 📜"
+            android:textColor="#9E9E9E"
+            android:textSize="18sp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@id/switcherBar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/labelRecent" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvExpenses"
@@ -171,6 +183,7 @@
             android:paddingBottom="16dp"
             app:layout_constraintBottom_toTopOf="@id/switcherBar"
             app:layout_constraintTop_toBottomOf="@id/labelRecent"
+            android:layoutAnimation="@anim/layout_animation_from_right"
             tools:listitem="@layout/item_expense" />
 
         <LinearLayout

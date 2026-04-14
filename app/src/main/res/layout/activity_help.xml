@@ -17,7 +17,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Help &amp; Support"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="@color/text_dark"
             android:textSize="22sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
@@ -32,8 +32,7 @@
             android:src="@drawable/envelope"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvHeaderTitle"
-            tools:src="@tools:sample/avatars" />
+            app:layout_constraintTop_toBottomOf="@id/tvHeaderTitle" />
 
         <TextView
             android:id="@+id/labelName"
@@ -41,7 +40,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:text="Full Name"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="@color/text_dark"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/ivIllustration" />
@@ -52,6 +51,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            app:boxBackgroundColor="@color/white"
             app:boxCornerRadiusBottomEnd="12dp"
             app:boxCornerRadiusBottomStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
@@ -60,11 +60,13 @@
             app:layout_constraintTop_toBottomOf="@id/labelName">
 
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etFullName"
                 android:layout_width="match_parent"
                 android:layout_height="55dp"
                 android:hint="John Doe"
                 android:inputType="textPersonName"
-                android:textColor="?attr/colorOnSurface" />
+                android:textColor="@color/text_dark"
+                android:textColorHint="@color/text_light" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
@@ -73,7 +75,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="Your Email"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="@color/text_dark"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tilName" />
@@ -84,6 +86,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            app:boxBackgroundColor="@color/white"
             app:boxCornerRadiusBottomEnd="12dp"
             app:boxCornerRadiusBottomStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
@@ -92,11 +95,13 @@
             app:layout_constraintTop_toBottomOf="@id/labelEmail">
 
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEmail"
                 android:layout_width="match_parent"
                 android:layout_height="55dp"
-                android:hint="johndoe@example.com"
+                android:hint="company@example.com"
                 android:inputType="textEmailAddress"
-                android:textColor="?attr/colorOnSurface" />
+                android:textColor="@color/text_dark"
+                android:textColorHint="@color/text_light" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
@@ -105,7 +110,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="Issue Category"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="@color/text_dark"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tilEmail" />
@@ -116,6 +121,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            app:boxBackgroundColor="@color/white"
             app:boxCornerRadiusBottomEnd="12dp"
             app:boxCornerRadiusBottomStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
@@ -130,7 +136,8 @@
                 android:hint="Bug Report"
                 android:inputType="none"
                 android:paddingStart="16dp"
-                android:textColor="?attr/colorOnSurface" />
+                android:textColor="@color/text_dark"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
@@ -139,7 +146,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="Describe your problem"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="@color/text_dark"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tilCategory" />
@@ -150,6 +157,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            app:boxBackgroundColor="@color/white"
             app:boxCornerRadiusBottomEnd="12dp"
             app:boxCornerRadiusBottomStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
@@ -165,7 +173,8 @@
                 android:hint="Provide details..."
                 android:inputType="textMultiLine"
                 android:lines="5"
-                android:textColor="?attr/colorOnSurface" />
+                android:textColor="@color/text_dark"
+                android:textColorHint="@color/text_light" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -175,15 +184,15 @@
             android:layout_height="55dp"
             android:layout_marginTop="16dp"
             android:gravity="start|center_vertical"
-            android:text="Attach Screenshot/Video (Optional)"
+            android:text="Attach Screenshot (Optional)"
             android:textAllCaps="false"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="@color/text_light"
             app:cornerRadius="12dp"
             app:icon="@drawable/camera"
             app:iconPadding="12dp"
-            app:iconTint="?attr/colorOnSurface"
+            app:iconTint="@color/text_light"
             app:layout_constraintTop_toBottomOf="@id/tilProblem"
-            app:strokeColor="?attr/colorOnSurface" />
+            />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSend"

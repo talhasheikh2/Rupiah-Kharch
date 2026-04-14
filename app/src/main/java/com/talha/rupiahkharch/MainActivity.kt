@@ -9,12 +9,16 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -37,8 +41,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: ExpenseAdapter
     private var isIncomeView = true
 
-    // NEW: Profile ImageView reference
+    // UI References
     private lateinit var btnProfile: ImageView
+    private lateinit var tvEmptyState: TextView
+    private lateinit var balanceCard: com.google.android.material.card.MaterialCardView
+
+    // Animation variables
+    private val handler = Handler(Looper.getMainLooper())
+    private lateinit var shakeRunnable: Runnable
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -49,6 +59,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // --- PERSISTENCE LOGIC START ---
+        // Must be called BEFORE super.onCreate to prevent flickering and ensure
+        // the app starts in the correct mode after being cleared from RAM.
+        val sharedPrefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        val isDark = sharedPrefs.getBoolean("dark_mode", false)
+        if (isDark) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        }
+        // --- PERSISTENCE LOGIC END ---
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -68,8 +90,16 @@ class MainActivity : AppCompatActivity() {
         val drawerLayout = findViewById<DrawerLayout>(R.id.drawerLayout)
         val btnMenu = findViewById<ImageView>(R.id.btnMenu)
 
-        // NEW: Initialize Profile Button
+        tvEmptyState = findViewById(R.id.tvEmptyState)
         btnProfile = findViewById(R.id.btnProfile)
+        balanceCard = findViewById(R.id.balanceCard)
+
+        // Setup Shake Animation Loop
+        val shakeAnim = AnimationUtils.loadAnimation(this, R.anim.shake)
+        shakeRunnable = Runnable {
+            balanceCard.startAnimation(shakeAnim)
+            handler.postDelayed(shakeRunnable, 4000) // Repeat every 4 seconds
+        }
 
         val navigationView = findViewById<NavigationView>(R.id.navigationView)
 
@@ -128,7 +158,6 @@ class MainActivity : AppCompatActivity() {
             viewModel.allExpenses.value?.let { updateDashboardAndList(it, tvCardTitle, tvTotalAmount, cardBackground) }
         }
 
-        // NEW: Open Settings/Profile when clicking top-right image
         btnProfile.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
@@ -155,15 +184,14 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_account -> startActivity(Intent(this, AccountDetailActivity::class.java))
                 R.id.nav_goals -> startActivity(Intent(this, SavingsActivity::class.java))
-                R.id.nav_about -> Toast.makeText(this, "About Clicked", Toast.LENGTH_SHORT).show()
+                R.id.nav_about -> startActivity(Intent(this, DonutChartActivity::class.java))
                 R.id.nav_settings -> startActivity(Intent(this, SettingsActivity::class.java))
-                R.id.nav_help -> startActivity(Intent(this,HelpActivity::class.java))
+                R.id.nav_help -> startActivity(Intent(this, HelpActivity::class.java))
             }
             drawerLayout.closeDrawers()
             true
         }
     }
-
     private fun setupAutoSavingsWorker() {
         val workManager = WorkManager.getInstance(this)
         val periodicRequest = PeriodicWorkRequestBuilder<SavingsWorker>(15, TimeUnit.MINUTES).build()
@@ -184,6 +212,20 @@ class MainActivity : AppCompatActivity() {
         } else {
             allRecords.filter { it.category.lowercase() !in listOf("income", "salary") }
         }
+
+        // --- EMPTY STATE LOGIC WITH ANIMATION ---
+        if (filteredList.isEmpty()) {
+            if (tvEmptyState.visibility == View.GONE) {
+                tvEmptyState.visibility = View.VISIBLE
+                val slideAnim = AnimationUtils.loadAnimation(this, R.anim.slide_down_fade)
+                tvEmptyState.startAnimation(slideAnim)
+            }
+            tvEmptyState.text = if (isIncomeView) "No Income records added yet" else "No Expense records added yet"
+        } else {
+            tvEmptyState.visibility = View.GONE
+            tvEmptyState.clearAnimation()
+        }
+
         title.text = if (isIncomeView) "Total Income" else "Total Expense"
         bg.setBackgroundColor(Color.parseColor(if (isIncomeView) "#102A43" else "#d3ae53"))
         amount.text = "${filteredList.sumOf { it.amount }}"
@@ -218,7 +260,15 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         loadToolbarTheme()
-        loadProfileImage() // NEW: Load the image whenever returning to main
+        loadProfileImage()
+        // Start the shake loop when screen is visible
+        handler.postDelayed(shakeRunnable, 4000)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Stop the shake loop when user leaves screen to save battery
+        handler.removeCallbacks(shakeRunnable)
     }
 
     private fun loadToolbarTheme() {
@@ -233,7 +283,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // NEW: Function to load the saved profile picture from EditProfileActivity
     private fun loadProfileImage() {
         val sharedPref = getSharedPreferences("UserProfile", Context.MODE_PRIVATE)
         val imageUriString = sharedPref.getString("user_image", null)
@@ -244,12 +293,10 @@ class MainActivity : AppCompatActivity() {
                 placeholder(R.drawable.ic_account)
                 error(R.drawable.ic_account)
                 transformations(CircleCropTransformation())
-                // Ensure tint is removed so the actual photo isn't blue/white
                 listener(onSuccess = { _, _ -> btnProfile.imageTintList = null })
             }
         } else {
             btnProfile.setImageResource(R.drawable.ic_account)
-            // Restore the white tint for the default icon
             btnProfile.imageTintList = ColorStateList.valueOf(Color.WHITE)
         }
     }
