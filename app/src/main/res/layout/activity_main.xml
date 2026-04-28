@@ -16,7 +16,7 @@
             android:id="@+id/customToolbar"
             android:layout_width="match_parent"
             android:layout_height="65dp"
-            android:background="@color/primary_blue"
+            android:background="@drawable/splash_gradient"
             android:paddingHorizontal="16dp"
             app:layout_constraintTop_toTopOf="parent">
 

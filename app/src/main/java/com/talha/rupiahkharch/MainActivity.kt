@@ -357,17 +357,42 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadProfileImage() {
         val sharedPref = getSharedPreferences("UserProfile", Context.MODE_PRIVATE)
-        val imageUriString = sharedPref.getString("user_image", null)
+        val savedImageData = sharedPref.getString("user_image", null)
 
-        if (imageUriString != null) {
-            btnProfile.load(Uri.parse(imageUriString)) {
-                crossfade(true)
-                placeholder(R.drawable.ic_account)
-                error(R.drawable.ic_account)
-                transformations(CircleCropTransformation())
-                listener(onSuccess = { _, _ -> btnProfile.imageTintList = null })
+        if (savedImageData != null) {
+            // Check if it's a Base64 string (from our new Cloud Sync logic)
+            if (savedImageData.length > 200) {
+                try {
+                    val imageBytes = android.util.Base64.decode(savedImageData, android.util.Base64.DEFAULT)
+                    btnProfile.load(imageBytes) {
+                        crossfade(true)
+                        placeholder(R.drawable.ic_account)
+                        error(R.drawable.ic_account)
+                        transformations(CircleCropTransformation())
+                        listener(onSuccess = { _, _ -> btnProfile.imageTintList = null })
+                    }
+                } catch (e: Exception) {
+                    // Fallback to loading as URI if decoding fails
+                    btnProfile.load(savedImageData) {
+                        crossfade(true)
+                        placeholder(R.drawable.ic_account)
+                        error(R.drawable.ic_account)
+                        transformations(CircleCropTransformation())
+                        listener(onSuccess = { _, _ -> btnProfile.imageTintList = null })
+                    }
+                }
+            } else {
+                // It's a standard local URI
+                btnProfile.load(Uri.parse(savedImageData)) {
+                    crossfade(true)
+                    placeholder(R.drawable.ic_account)
+                    error(R.drawable.ic_account)
+                    transformations(CircleCropTransformation())
+                    listener(onSuccess = { _, _ -> btnProfile.imageTintList = null })
+                }
             }
         } else {
+            // No image found: show default icon
             btnProfile.setImageResource(R.drawable.ic_account)
             btnProfile.imageTintList = ColorStateList.valueOf(Color.WHITE)
         }

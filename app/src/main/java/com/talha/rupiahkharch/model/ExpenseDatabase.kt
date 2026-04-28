@@ -6,8 +6,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [Expense::class, SavingsGoal::class],
-    version = 10,
+    // Added User::class to the entities list
+    entities = [Expense::class, SavingsGoal::class, User::class],
+    version = 11, // Increased version because we changed the database schema
     exportSchema = false
 )
 abstract class ExpenseDatabase : RoomDatabase() {
@@ -15,23 +16,21 @@ abstract class ExpenseDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun goalDao(): GoalDao
 
+    // Added User DAO
+    abstract fun userDao(): UserDao
+
     companion object {
         @Volatile
         private var INSTANCE: ExpenseDatabase? = null
 
         fun getDatabase(context: Context): ExpenseDatabase {
-            // Standard Double-Check Locking for Singleton pattern
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     ExpenseDatabase::class.java,
                     "rupiah_kharch_db"
                 )
-                    /* * Since we are on Version 7 with new fields, this will
-                     * wipe the old DB and recreate it with the new schema
-                     * to prevent crashes.
-                     */
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration() // Be careful: this wipes data when version changes
                     .build()
                 INSTANCE = instance
                 instance

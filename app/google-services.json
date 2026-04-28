@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "520190672707",
+    "project_id": "rupiahkharch",
+    "storage_bucket": "rupiahkharch.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:520190672707:android:16757f0fbc7563970d39f6",
+        "android_client_info": {
+          "package_name": "com.talha.rupiahkharch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5rct7-AOj0riZ9Wgvdra4lzP6jWxxTTU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

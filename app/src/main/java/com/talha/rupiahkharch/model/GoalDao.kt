@@ -11,8 +11,7 @@ import androidx.room.Update
 interface GoalDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertGoal(goal: SavingsGoal)
-
+    suspend fun insertGoal(goal: SavingsGoal): Long // Return Long instead of Unit
     // Used by the SavingsActivity to show live updates on the UI
     @Query("SELECT * FROM savings_goals")
     fun getAllGoals(): LiveData<List<SavingsGoal>>

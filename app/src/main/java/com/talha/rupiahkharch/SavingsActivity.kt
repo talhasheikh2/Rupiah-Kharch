@@ -2,31 +2,27 @@ package com.talha.rupiahkharch
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.talha.rupiahkharch.adapter.SavingsGoalAdapter
-import com.talha.rupiahkharch.model.ExpenseDatabase
 import com.talha.rupiahkharch.model.SavingsGoal
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.talha.rupiahkharch.viewmodel.SavingsViewModel
 
 class SavingsActivity : AppCompatActivity() {
 
     private lateinit var rvSavingsGoals: RecyclerView
     private lateinit var adapter: SavingsGoalAdapter
-    private lateinit var btnBackToAccount: ImageButton // Add this
+    private lateinit var btnBackToAccount: ImageButton
+    private lateinit var backHome: ImageView
 
-    private lateinit var backHome: ImageView // Add this
-
-
+    // NEW: Add the ViewModel reference
+    private lateinit var savingsViewModel: SavingsViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,13 +30,16 @@ class SavingsActivity : AppCompatActivity() {
 
         // Initialize views
         rvSavingsGoals = findViewById(R.id.rvSavingsGoals)
-        btnBackToAccount = findViewById(R.id.backToAccount) // Initialize the button
-        backHome = findViewById(R.id.backHome) // Initialize the button
+        btnBackToAccount = findViewById(R.id.backToAccount)
+        backHome = findViewById(R.id.backHome)
 
+        // Initialize ViewModel
+        // This is the "Bridge" to your Repository and Firebase
+        savingsViewModel = ViewModelProvider(this).get(SavingsViewModel::class.java)
 
         rvSavingsGoals.layoutManager = GridLayoutManager(this, 2)
 
-        // 1. Setup the Navigation to EditAccountActivity
+        // 1. Setup Navigation
         btnBackToAccount.setOnClickListener {
             val intent = Intent(this, AccountDetailActivity::class.java)
             startActivity(intent)
@@ -51,7 +50,7 @@ class SavingsActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // 2. Initialize Adapter with TWO listeners (Delete and Pause)
+        // 2. Initialize Adapter
         adapter = SavingsGoalAdapter(
             goals = emptyList(),
             onItemClick = { clickedGoal ->
@@ -63,28 +62,24 @@ class SavingsActivity : AppCompatActivity() {
         )
         rvSavingsGoals.adapter = adapter
 
-        val db = ExpenseDatabase.getDatabase(this)
-
-        db.goalDao().getAllGoals().observe(this) { goals ->
+        // 3. Observe the ViewModel instead of the DB directly
+        // This ensures the UI updates whenever the local or cloud data changes
+        savingsViewModel.allGoals.observe(this) { goals ->
             if (goals != null) {
                 adapter.updateList(goals)
             }
         }
     }
 
-    // Toggle the Pause/Resume status in the DB
+    // UPDATED: Toggle Pause status using ViewModel (Triggers Cloud Sync)
     private fun toggleGoalPause(goal: SavingsGoal) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val db = ExpenseDatabase.getDatabase(applicationContext)
+        goal.isPaused = !goal.isPaused
 
-            goal.isPaused = !goal.isPaused
-            db.goalDao().updateGoal(goal)
+        // This call goes: ViewModel -> Repository -> (Room + Firebase)
+        savingsViewModel.update(goal)
 
-            withContext(Dispatchers.Main) {
-                val statusMessage = if (goal.isPaused) "Goal Paused" else "Goal Resumed"
-                Toast.makeText(this@SavingsActivity, statusMessage, Toast.LENGTH_SHORT).show()
-            }
-        }
+        val statusMessage = if (goal.isPaused) "Goal Paused" else "Goal Resumed"
+        Toast.makeText(this@SavingsActivity, statusMessage, Toast.LENGTH_SHORT).show()
     }
 
     private fun showDeleteConfirmation(goal: SavingsGoal) {
@@ -98,14 +93,11 @@ class SavingsActivity : AppCompatActivity() {
             .show()
     }
 
+    // UPDATED: Perform Deletion using ViewModel (Triggers Cloud Deletion)
     private fun performDeletion(goal: SavingsGoal) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val db = ExpenseDatabase.getDatabase(applicationContext)
-            db.goalDao().deleteGoal(goal.id)
+        // We pass the ID to the ViewModel
+        savingsViewModel.delete(goal.id)
 
-            withContext(Dispatchers.Main) {
-                Toast.makeText(this@SavingsActivity, "Goal Deleted", Toast.LENGTH_SHORT).show()
-            }
-        }
+        Toast.makeText(this@SavingsActivity, "Goal Deleted from Phone & Cloud", Toast.LENGTH_SHORT).show()
     }
 }

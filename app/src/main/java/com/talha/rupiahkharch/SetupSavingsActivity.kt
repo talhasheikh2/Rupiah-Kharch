@@ -8,6 +8,7 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -17,8 +18,10 @@ import com.talha.rupiahkharch.CategoryAdapter
 import com.talha.rupiahkharch.model.ExpenseDatabase
 import com.talha.rupiahkharch.model.GoalCategory
 import com.talha.rupiahkharch.model.SavingsGoal
-import kotlinx.coroutines.launch
+import com.talha.rupiahkharch.viewmodel.ExpenseViewModel
+import com.talha.rupiahkharch.viewmodel.SavingsViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
 
@@ -27,7 +30,7 @@ class SetupSavingsActivity : AppCompatActivity() {
     private lateinit var rvCategories: RecyclerView
     private lateinit var etTargetAmount: EditText
     private lateinit var etDeductionAmount: EditText
-    private lateinit var etMinBalanceSafety: EditText // NEW
+    private lateinit var etMinBalanceSafety: EditText
     private lateinit var toggleGroup: MaterialButtonToggleGroup
     private lateinit var tvPrediction: TextView
     private lateinit var btnStartGoal: MaterialButton
@@ -36,6 +39,10 @@ class SetupSavingsActivity : AppCompatActivity() {
     private var selectedCategoryName: String = "Car"
     private var selectedIconRes: Int = R.drawable.cars
 
+    // NEW: ViewModels for Cloud Sync
+    private lateinit var savingsViewModel: SavingsViewModel
+    private lateinit var expenseViewModel: ExpenseViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_setup_savings)
@@ -43,6 +50,10 @@ class SetupSavingsActivity : AppCompatActivity() {
         initViews()
         setupCategoryRecyclerView()
         setupInputListeners()
+
+        // Initialize ViewModels
+        savingsViewModel = ViewModelProvider(this).get(SavingsViewModel::class.java)
+        expenseViewModel = ViewModelProvider(this).get(ExpenseViewModel::class.java)
 
         btnStartGoal.setOnClickListener {
             saveGoalToDatabase()
@@ -53,7 +64,7 @@ class SetupSavingsActivity : AppCompatActivity() {
         rvCategories = findViewById(R.id.rvCategories)
         etTargetAmount = findViewById(R.id.etTargetAmount)
         etDeductionAmount = findViewById(R.id.etDeductionAmount)
-        etMinBalanceSafety = findViewById(R.id.etMinBalanceSafety) // NEW
+        etMinBalanceSafety = findViewById(R.id.etMinBalanceSafety)
         toggleGroup = findViewById(R.id.toggleGroup)
         tvPrediction = findViewById(R.id.tvPrediction)
         btnStartGoal = findViewById(R.id.btnStartGoal)
@@ -127,7 +138,7 @@ class SetupSavingsActivity : AppCompatActivity() {
     private fun saveGoalToDatabase() {
         val targetAmountValue = etTargetAmount.text.toString().toDoubleOrNull() ?: 0.0
         val deductionAmountValue = etDeductionAmount.text.toString().toDoubleOrNull() ?: 0.0
-        val minSafetyValue = etMinBalanceSafety.text.toString().toDoubleOrNull() ?: 10000.0 // NEW: Default to 10k
+        val minSafetyValue = etMinBalanceSafety.text.toString().toDoubleOrNull() ?: 10000.0
 
         if (targetAmountValue <= 0) {
             etTargetAmount.error = "Please enter a valid target"
@@ -152,17 +163,16 @@ class SetupSavingsActivity : AppCompatActivity() {
             try {
                 val db = ExpenseDatabase.getDatabase(applicationContext)
 
-                // NEW: Calculate current balance to see if we should perform the first deduction
+                // Calculate current balance for first deduction logic
                 val income = db.expenseDao().getTotalIncomeSync() ?: 0.0
                 val expense = db.expenseDao().getTotalExpenseSync() ?: 0.0
                 val currentBalance = income - expense
 
-                // Determine if we start with money already saved or 0 based on safety limit
                 val initialSavedAmount = if (currentBalance >= minSafetyValue) deductionAmountValue else 0.0
 
-                // 1. Prepare the Goal
+                // 1. Prepare the Goal object
                 val newGoal = SavingsGoal(
-                    id = 0,
+                    id = 0, // Room will auto-generate this
                     title = selectedCategoryName,
                     targetAmount = targetAmountValue,
                     iconRes = selectedIconRes,
@@ -172,14 +182,14 @@ class SetupSavingsActivity : AppCompatActivity() {
                     startDate = currentTime,
                     savedAmount = initialSavedAmount,
                     lastDeductionDate = if (initialSavedAmount > 0) currentTime else 0L,
-                    minBalanceSafety = minSafetyValue, // NEW
-                    isPaused = false // NEW
+                    minBalanceSafety = minSafetyValue,
+                    isPaused = false
                 )
 
-                // Save Goal
-                db.goalDao().insertGoal(newGoal)
+                // 2. Save via ViewModel (This triggers Local Room + Cloud Firestore)
+                savingsViewModel.insert(newGoal)
 
-                // 2. If we actually deducted money, add the record
+                // 3. If deduction occurred, record it as an expense via ViewModel
                 if (initialSavedAmount > 0) {
                     val firstDeductionRecord = com.talha.rupiahkharch.model.Expense(
                         id = 0,
@@ -189,15 +199,17 @@ class SetupSavingsActivity : AppCompatActivity() {
                         category = "savings",
                         color = "#009688"
                     )
-                    db.expenseDao().insert(firstDeductionRecord)
+                    expenseViewModel.insert(firstDeductionRecord)
                 }
 
                 withContext(Dispatchers.Main) {
-                    if (initialSavedAmount > 0) {
-                        Toast.makeText(applicationContext, "Goal Started & First Deduction Added!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(applicationContext, "Goal Started! First deduction skipped (Balance low).", Toast.LENGTH_LONG).show()
-                    }
+                    val msg = if (initialSavedAmount > 0)
+                        "Goal Started & First Deduction Synced!"
+                    else
+                        "Goal Started! Deduction skipped (Balance low)."
+
+                    Toast.makeText(applicationContext, msg, Toast.LENGTH_LONG).show()
+
                     startActivity(Intent(this@SetupSavingsActivity, SavingsActivity::class.java))
                     finish()
                 }
