@@ -1,35 +1,44 @@
 package com.talha.rupiahkharch.model
 
 import androidx.lifecycle.LiveData
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.Update
+import androidx.room.*
 
 @Dao
 interface GoalDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertGoal(goal: SavingsGoal): Long // Return Long instead of Unit
-    // Used by the SavingsActivity to show live updates on the UI
-    @Query("SELECT * FROM savings_goals")
-    fun getAllGoals(): LiveData<List<SavingsGoal>>
+    suspend fun insertGoal(goal: SavingsGoal): Long
 
     /**
-     * NEW: Used by SavingsWorker.
-     * Background workers need a direct List, not LiveData.
+     * UPDATED: Now filters by userId to ensure User A
+     * cannot see User B's goals.
      */
-    @Query("SELECT * FROM savings_goals")
-    fun getAllGoalsSync(): List<SavingsGoal>
+    @Query("SELECT * FROM savings_goals WHERE userId = :userId")
+    fun getAllGoals(userId: String): LiveData<List<SavingsGoal>>
 
     /**
-     * NEW: Allows the worker to update the savedAmount
-     * and lastDeductionDate for an existing goal.
+     * UPDATED: Used by SavingsWorker.
+     * Filters by userId to process deductions only for the active user.
      */
+    @Query("SELECT * FROM savings_goals WHERE userId = :userId")
+    fun getAllGoalsSync(userId: String): List<SavingsGoal>
+
     @Update
     suspend fun updateGoal(goal: SavingsGoal)
 
     @Query("DELETE FROM savings_goals WHERE id = :goalId")
     suspend fun deleteGoal(goalId: Int)
+
+    /**
+     * NEW: Clears all goals.
+     * Call this in your ViewModel's logout function.
+     */
+    @Query("DELETE FROM savings_goals")
+    suspend fun deleteAll()
+
+    /**
+     * NEW: Resets the Auto-Increment ID counter.
+     */
+    @Query("DELETE FROM sqlite_sequence WHERE name='savings_goals'")
+    suspend fun resetIdCounter()
 }

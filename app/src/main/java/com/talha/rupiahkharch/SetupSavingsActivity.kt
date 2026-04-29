@@ -135,10 +135,17 @@ class SetupSavingsActivity : AppCompatActivity() {
         }
     }
 
+// ... inside SetupSavingsActivity.kt ...
+
+// ... (keep imports and class variables as they are)
+
     private fun saveGoalToDatabase() {
         val targetAmountValue = etTargetAmount.text.toString().toDoubleOrNull() ?: 0.0
         val deductionAmountValue = etDeductionAmount.text.toString().toDoubleOrNull() ?: 0.0
         val minSafetyValue = etMinBalanceSafety.text.toString().toDoubleOrNull() ?: 10000.0
+
+        // Get current User ID
+        val currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
         if (targetAmountValue <= 0) {
             etTargetAmount.error = "Please enter a valid target"
@@ -163,16 +170,17 @@ class SetupSavingsActivity : AppCompatActivity() {
             try {
                 val db = ExpenseDatabase.getDatabase(applicationContext)
 
-                // Calculate current balance for first deduction logic
-                val income = db.expenseDao().getTotalIncomeSync() ?: 0.0
-                val expense = db.expenseDao().getTotalExpenseSync() ?: 0.0
+                // FIXED: Pass currentUserId to these functions to match the updated Dao
+                val income = db.expenseDao().getTotalIncomeSync(currentUserId) ?: 0.0
+                val expense = db.expenseDao().getTotalExpenseSync(currentUserId) ?: 0.0
                 val currentBalance = income - expense
 
                 val initialSavedAmount = if (currentBalance >= minSafetyValue) deductionAmountValue else 0.0
 
                 // 1. Prepare the Goal object
                 val newGoal = SavingsGoal(
-                    id = 0, // Room will auto-generate this
+                    id = 0,
+                    userId = currentUserId,
                     title = selectedCategoryName,
                     targetAmount = targetAmountValue,
                     iconRes = selectedIconRes,
@@ -186,13 +194,14 @@ class SetupSavingsActivity : AppCompatActivity() {
                     isPaused = false
                 )
 
-                // 2. Save via ViewModel (This triggers Local Room + Cloud Firestore)
+                // 2. Save via ViewModel
                 savingsViewModel.insert(newGoal)
 
-                // 3. If deduction occurred, record it as an expense via ViewModel
+                // 3. Record expense if deduction happened
                 if (initialSavedAmount > 0) {
                     val firstDeductionRecord = com.talha.rupiahkharch.model.Expense(
                         id = 0,
+                        userId = currentUserId, // FIXED: Added userId here too
                         title = "Savings: $selectedCategoryName",
                         amount = deductionAmountValue,
                         date = currentTime,
@@ -209,7 +218,6 @@ class SetupSavingsActivity : AppCompatActivity() {
                         "Goal Started! Deduction skipped (Balance low)."
 
                     Toast.makeText(applicationContext, msg, Toast.LENGTH_LONG).show()
-
                     startActivity(Intent(this@SetupSavingsActivity, SavingsActivity::class.java))
                     finish()
                 }

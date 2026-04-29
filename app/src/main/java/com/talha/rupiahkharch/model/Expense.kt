@@ -7,9 +7,10 @@ import androidx.room.PrimaryKey
 data class Expense(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+    val userId: String = "", // <--- THIS WAS MISSING
     var title: String,
     var amount: Double,
-    var date: Long,
+    val date: Long,
     var category: String,
-    var color: String = "#00B0FF"
+    var color: String = "#000000"
 )

@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.ListenableWorker.Result
+import com.google.firebase.auth.FirebaseAuth
 import com.talha.rupiahkharch.NotificationHelper
 import com.talha.rupiahkharch.model.Expense
 import com.talha.rupiahkharch.model.ExpenseDatabase
@@ -14,40 +15,40 @@ class SavingsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
     override suspend fun doWork(): Result {
         return try {
+            // 1. GET THE CURRENT USER ID
+            val userId = FirebaseAuth.getInstance().currentUser?.uid
+            if (userId == null) {
+                Log.d("SAVINGS_WORKER", "No user logged in. Worker stopping.")
+                return Result.success()
+            }
+
             val db = ExpenseDatabase.getDatabase(applicationContext)
             val goalDao = db.goalDao()
             val expenseDao = db.expenseDao()
 
-            val allGoals = goalDao.getAllGoalsSync()
-            Log.d("SAVINGS_WORKER", "Worker started. Checking ${allGoals.size} goals.")
+            // 2. Fetch only THIS user's goals
+            val allGoals = goalDao.getAllGoalsSync(userId)
+            Log.d("SAVINGS_WORKER", "Worker started for user $userId. Checking ${allGoals.size} goals.")
 
-            // 1. CALCULATE CURRENT BALANCE ONCE
-            val income = expenseDao.getTotalIncomeSync() ?: 0.0
-            val expenses = expenseDao.getTotalExpenseSync() ?: 0.0
+            // 3. CALCULATE BALANCE (Passing userId to updated Dao functions)
+            val income = expenseDao.getTotalIncomeSync(userId) ?: 0.0
+            val expenses = expenseDao.getTotalExpenseSync(userId) ?: 0.0
             val currentBalance = income - expenses
 
-            Log.d("SAVINGS_WORKER", "Current Balance: Rs. $currentBalance")
+            Log.d("SAVINGS_WORKER", "Current Balance for $userId: Rs. $currentBalance")
 
             allGoals.forEach { goal ->
-                // 2. CHECK: IS MANUALLY PAUSED?
-                if (goal.isPaused) {
-                    Log.d("SAVINGS_WORKER", "Skipping '${goal.title}': Goal is paused by user.")
-                    return@forEach
-                }
+                if (goal.isPaused) return@forEach
 
-                // 3. CHECK: SAFETY NET (Does user have enough money?)
+                // Check Safety Net
                 if (currentBalance < goal.minBalanceSafety) {
-                    Log.d("SAVINGS_WORKER", "Safety Net Triggered for '${goal.title}'!")
-
-                    // Update UI flag (This stays true so the card shows the red alert)
                     if (!goal.wasSkippedLowBalance) {
                         goal.wasSkippedLowBalance = true
                         goalDao.updateGoal(goal)
                     }
 
-                    // --- NEW: NOTIFICATION THROTTLING (Max ~3 times a week) ---
                     val currentTime = System.currentTimeMillis()
-                    val fortyEightHours = 48 * 60 * 60 * 1000L // 48 hours in milliseconds
+                    val fortyEightHours = 48 * 60 * 60 * 1000L
 
                     if (currentTime - goal.lastNotificationDate > fortyEightHours) {
                         NotificationHelper.showNotification(
@@ -55,38 +56,32 @@ class SavingsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                             "Savings Paused",
                             "We skipped your '${goal.title}' saving today to keep your balance above Rs. ${goal.minBalanceSafety}."
                         )
-
-                        // Update the notification timestamp
                         goal.lastNotificationDate = currentTime
                         goalDao.updateGoal(goal)
                     }
-
                     return@forEach
                 } else {
-                    // Reset flag if balance is now healthy
                     if (goal.wasSkippedLowBalance) {
                         goal.wasSkippedLowBalance = false
                         goalDao.updateGoal(goal)
                     }
                 }
 
-                // 4. CHECK: IS IT TIME TO DEDUCT?
+                // Check if Deduction is Due
                 if (goal.isDeductionDue()) {
                     val currentTime = System.currentTimeMillis()
 
-                    // Update Goal Progress
+                    // Update Goal
                     goal.savedAmount += goal.deductionAmount
                     goal.lastDeductionDate = currentTime
-
-                    // IMPORTANT: Reset notification timer & UI flag on success
                     goal.wasSkippedLowBalance = false
                     goal.lastNotificationDate = 0L
-
                     goalDao.updateGoal(goal)
 
-                    // Add Record to Main Screen
+                    // 4. Record Expense WITH userId (Fixed the 'userId' symbol error)
                     val savingsExpense = Expense(
                         id = 0,
+                        userId = userId, // Attached the ID here
                         title = "Savings Plan: ${goal.title}",
                         amount = goal.deductionAmount,
                         date = currentTime,
@@ -95,21 +90,16 @@ class SavingsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                     )
                     expenseDao.insert(savingsExpense)
 
-                    Log.d("SAVINGS_WORKER", "SUCCESS: Added Rs. ${goal.deductionAmount} for ${goal.title}")
-
                     NotificationHelper.showNotification(
                         applicationContext,
                         "Savings Alert!",
                         "Rs. ${goal.deductionAmount} added to ${goal.title}."
                     )
-                } else {
-                    Log.d("SAVINGS_WORKER", "Goal '${goal.title}' is not due yet.")
                 }
             }
             Result.success()
         } catch (e: Exception) {
             Log.e("SAVINGS_WORKER", "CRITICAL ERROR: ${e.message}")
-            e.printStackTrace()
             Result.retry()
         }
     }

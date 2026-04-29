@@ -206,6 +206,11 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_about -> startActivity(Intent(this, DonutChartActivity::class.java))
                 R.id.nav_settings -> startActivity(Intent(this, SettingsActivity::class.java))
                 R.id.nav_help -> startActivity(Intent(this, HelpActivity::class.java))
+
+                // --- ADD THIS LOGOUT CASE ---
+                R.id.nav_logout -> {
+                    showLogoutConfirmation()
+                }
             }
             drawerLayout.closeDrawers()
             true
@@ -395,6 +400,37 @@ class MainActivity : AppCompatActivity() {
             // No image found: show default icon
             btnProfile.setImageResource(R.drawable.ic_account)
             btnProfile.imageTintList = ColorStateList.valueOf(Color.WHITE)
+        }
+    }
+
+    private fun showLogoutConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("Logout")
+            .setMessage("Are you sure you want to logout? Your data is saved safely in the cloud.")
+            .setPositiveButton("Logout") { _, _ ->
+                performLogout()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun performLogout() {
+        // 1. Sign out of Firebase FIRST
+        com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+
+        // 2. Clear all Local Preferences
+        getSharedPreferences("UserProfile", Context.MODE_PRIVATE).edit().clear().apply()
+        getSharedPreferences("AppPrefs", Context.MODE_PRIVATE).edit().clear().apply()
+        getSharedPreferences("AccountPrefs", Context.MODE_PRIVATE).edit().clear().apply()
+
+        // 3. Clear the Database and navigate ONLY when finished
+        // This replaces the Handler/Timer logic
+        viewModel.logoutClearData {
+            // This block runs ONLY after the database is 100% empty
+            val intent = Intent(this@MainActivity, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
         }
     }
 }

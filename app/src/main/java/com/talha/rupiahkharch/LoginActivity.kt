@@ -2,8 +2,10 @@ package com.talha.rupiahkharch
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -11,9 +13,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
-import com.talha.rupiahkharch.model.ExpenseDatabase
 import com.talha.rupiahkharch.sync.SyncManager
 import com.talha.rupiahkharch.viewmodel.ExpenseViewModel
+import com.talha.rupiahkharch.viewmodel.SavingsViewModel // ADD THIS IMPORT
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -29,17 +31,23 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var tvSignUpLink: TextView
     private lateinit var tvForgotPassword: TextView
 
-    // Initialize Firebase Auth
     private lateinit var auth: FirebaseAuth
 
-    // Get ViewModel to pass to SyncManager
-    private val viewModel: ExpenseViewModel by viewModels()
+    // UPDATED: Now initializing BOTH ViewModels
+    private val expenseViewModel: ExpenseViewModel by viewModels()
+    private val savingsViewModel: SavingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
 
         auth = FirebaseAuth.getInstance()
+        if (auth.currentUser != null) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
+        }
+
+        setContentView(R.layout.activity_login)
 
         etEmail = findViewById(R.id.etEmail)
         etPassword = findViewById(R.id.etPassword)
@@ -74,46 +82,34 @@ class LoginActivity : AppCompatActivity() {
         tilPassword.error = null
 
         if (email.isEmpty()) {
-            tilEmail.error = "Email is required"
-            return
+            tilEmail.error = "Email is required"; return
         }
         if (password.isEmpty()) {
-            tilPassword.error = "Password is required"
-            return
+            tilPassword.error = "Password is required"; return
         }
 
         lifecycleScope.launch {
             try {
-                // 1. Authenticate with FIREBASE CLOUD
+                btnLogin.isEnabled = false
                 val authResult = auth.signInWithEmailAndPassword(email, password).await()
 
                 if (authResult.user != null) {
+                    Toast.makeText(this@LoginActivity, "Restoring data from cloud...", Toast.LENGTH_SHORT).show()
 
-                    // --- CLOUD SYNC START ---
-                    // Show a message so user knows data is being restored
-                    Toast.makeText(this@LoginActivity, "Restoring your data...", Toast.LENGTH_SHORT).show()
-
-                    val syncManager = SyncManager(this@LoginActivity, viewModel)
+                    // FIXED: Now passing both expenseViewModel AND savingsViewModel
+                    val syncManager = SyncManager(this@LoginActivity, expenseViewModel, savingsViewModel)
 
                     withContext(Dispatchers.IO) {
                         syncManager.downloadUserData()
                     }
-                    // --- CLOUD SYNC END ---
 
-                    // Check local name for the welcome toast
-                    val db = ExpenseDatabase.getDatabase(this@LoginActivity)
-                    val localUser = withContext(Dispatchers.IO) {
-                        db.userDao().isEmailRegistered(email)
-                    }
-
-                    val userName = localUser?.name ?: "User"
-                    Toast.makeText(this@LoginActivity, "Welcome back, $userName!", Toast.LENGTH_SHORT).show()
-
+                    Toast.makeText(this@LoginActivity, "Welcome back!", Toast.LENGTH_SHORT).show()
                     val intent = Intent(this@LoginActivity, MainActivity::class.java)
                     startActivity(intent)
                     finish()
                 }
             } catch (e: Exception) {
+                btnLogin.isEnabled = true
                 Toast.makeText(this@LoginActivity, "Login Failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
             }
         }

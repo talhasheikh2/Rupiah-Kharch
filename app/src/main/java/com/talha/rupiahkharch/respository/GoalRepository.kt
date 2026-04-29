@@ -12,18 +12,27 @@ class GoalRepository(private val goalDao: GoalDao) {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    val allGoals: LiveData<List<SavingsGoal>> = goalDao.getAllGoals()
+    // Function to get goals for a specific user
+    fun getAllGoals(userId: String): LiveData<List<SavingsGoal>> {
+        return goalDao.getAllGoals(userId)
+    }
 
-    suspend fun insert(goal: SavingsGoal) {
-        // 1. Save to Room and get the generated ID
-        val newId = goalDao.insertGoal(goal)
+    /**
+     * @param isFromCloud If true, only saves to Room (used during Sync).
+     * If false, saves to Room AND uploads to Firestore (used for new goals).
+     */
+    suspend fun insert(goal: SavingsGoal, isFromCloud: Boolean = false) {
+        val userId = auth.currentUser?.uid ?: return
 
-        // 2. Create a copy with the correct ID for Cloud
-        val updatedGoal = goal.copy(id = newId.toInt())
+        // Ensure the goal is tagged with the current user's ID
+        val goalWithUser = goal.copy(userId = userId)
 
-        // 3. Mirror to Cloud Firestore
-        val userId = auth.currentUser?.uid
-        if (userId != null) {
+        // 1. Save to Room
+        val newId = goalDao.insertGoal(goalWithUser)
+
+        // 2. Mirror to Cloud only if it's a new manual entry
+        if (!isFromCloud) {
+            val updatedGoal = goalWithUser.copy(id = newId.toInt())
             try {
                 firestore.collection("users")
                     .document(userId)
@@ -32,32 +41,48 @@ class GoalRepository(private val goalDao: GoalDao) {
                     .set(updatedGoal)
                     .await()
             } catch (e: Exception) {
-                // Firestore handles offline queueing automatically
+                // Offline handling is automatic with Firestore
             }
         }
     }
 
     suspend fun update(goal: SavingsGoal) {
+        val userId = auth.currentUser?.uid ?: return
         goalDao.updateGoal(goal)
 
-        val userId = auth.currentUser?.uid
-        if (userId != null) {
-            firestore.collection("users").document(userId)
-                .collection("goals").document(goal.id.toString())
+        try {
+            firestore.collection("users")
+                .document(userId)
+                .collection("goals")
+                .document(goal.id.toString())
                 .set(goal)
-        }
+                .await()
+        } catch (e: Exception) {}
     }
 
     suspend fun delete(goalId: Int) {
+        val userId = auth.currentUser?.uid ?: return
+
         // 1. Delete from Room
         goalDao.deleteGoal(goalId)
 
         // 2. Delete from Cloud
-        val userId = auth.currentUser?.uid
-        if (userId != null) {
-            firestore.collection("users").document(userId)
-                .collection("goals").document(goalId.toString())
+        try {
+            firestore.collection("users")
+                .document(userId)
+                .collection("goals")
+                .document(goalId.toString())
                 .delete()
-        }
+                .await()
+        } catch (e: Exception) {}
+    }
+
+    /**
+     * Clears local goals and resets ID counter.
+     * Call this during logout.
+     */
+    suspend fun deleteAll() {
+        goalDao.deleteAll()
+        goalDao.resetIdCounter()
     }
 }

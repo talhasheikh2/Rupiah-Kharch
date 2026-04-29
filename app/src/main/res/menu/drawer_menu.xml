@@ -25,4 +25,9 @@
         android:title="Help"
         android:icon="@drawable/help" />
 
+    <item
+        android:id="@+id/nav_logout"
+        android:icon="@drawable/logout"
+        android:title="Logout" />
+
 </menu>

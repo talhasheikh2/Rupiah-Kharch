@@ -4,21 +4,21 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_light"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Category Picker"
-            android:textColor="@color/text_dark"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+        android:padding="20dp"
+        android:paddingBottom="40dp"> <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Category Picker"
+        android:textColor="@color/text_dark"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvCategories"
@@ -26,6 +26,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:clipToPadding="false"
+            android:minHeight="80dp"
             android:orientation="horizontal"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
@@ -64,7 +65,7 @@
                         android:layout_height="wrap_content"
                         android:text="Rs."
                         android:textColor="@color/text_dark"
-                        android:textSize="32sp"
+                        android:textSize="28sp"
                         android:textStyle="bold" />
 
                     <EditText
@@ -77,7 +78,7 @@
                         android:textColorHint="@color/text_light"
                         android:inputType="number"
                         android:textColor="@color/text_dark"
-                        android:textSize="32sp"
+                        android:textSize="28sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -99,6 +100,8 @@
                         android:text="Daily"
                         android:textColor="@color/text_dark"
                         android:textAllCaps="false"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
                         app:cornerRadius="12dp" />
 
                     <com.google.android.material.button.MaterialButton
@@ -109,6 +112,8 @@
                         android:layout_weight="1"
                         android:textColor="@color/text_dark"
                         android:text="Weekly"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
                         android:textAllCaps="false" />
 
                     <com.google.android.material.button.MaterialButton
@@ -119,6 +124,8 @@
                         android:layout_weight="1"
                         android:textColor="@color/text_dark"
                         android:text="Monthly"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
                         android:textAllCaps="false" />
                 </com.google.android.material.button.MaterialButtonToggleGroup>
 
@@ -140,6 +147,7 @@
                     android:textColorHint="@color/text_light"
                     android:textColor="@color/text_dark"
                     android:inputType="numberDecimal"
+                    android:background="@drawable/bg_input_field"
                     android:padding="12dp"
                     android:textSize="16sp" />
 
@@ -181,6 +189,7 @@
                     android:textColorHint="@color/text_light"
                     android:textColor="@color/text_dark"
                     android:inputType="number"
+                    android:background="@drawable/bg_input_field"
                     android:padding="12dp"
                     android:textSize="16sp" />
 
@@ -199,14 +208,14 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartGoal"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
+            android:layout_height="56dp"
             android:layout_marginTop="24dp"
             android:text="Start My Goal"
             android:textColor="@color/always_white"
             android:textAllCaps="false"
-            android:textSize="18sp"
+            android:textSize="16sp"
             app:backgroundTint="@color/teal_primary"
-            app:cornerRadius="30dp" />
+            app:cornerRadius="28dp" />
 
     </LinearLayout>
 </ScrollView>
